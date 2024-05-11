@@ -87,33 +87,33 @@ void getcmd(const Block *block, char *output)
 	char *cmd = block->command;
 	FILE *cmdf = popen(cmd,"r");
 	if (!cmdf){
-        //printf("failed to run: %s, %d\n", block->command, errno);
+		//printf("failed to run: %s, %d\n", block->command, errno);
 		return;
-    }
-    char tmpstr[CMDLENGTH] = "";
-    // TODO decide whether its better to use the last value till next time or just keep trying while the error was the interrupt
-    // this keeps trying to read if it got nothing and the error was an interrupt
-    //  could also just read to a separate buffer and not move the data over if interrupted
-    //  this way will take longer trying to complete 1 thing but will get it done
-    //  the other way will move on to keep going with everything and the part that failed to read will be wrong till its updated again
-    // either way you have to save the data to a temp buffer because when it fails it writes nothing and then then it gets displayed before this finishes
+	}
+	char tmpstr[CMDLENGTH] = "";
+	// TODO decide whether its better to use the last value till next time or just keep trying while the error was the interrupt
+	// this keeps trying to read if it got nothing and the error was an interrupt
+	//  could also just read to a separate buffer and not move the data over if interrupted
+	//  this way will take longer trying to complete 1 thing but will get it done
+	//  the other way will move on to keep going with everything and the part that failed to read will be wrong till its updated again
+	// either way you have to save the data to a temp buffer because when it fails it writes nothing and then then it gets displayed before this finishes
 	char * s;
-    int e;
-    do {
-        errno = 0;
-        s = fgets(tmpstr, CMDLENGTH-(strlen(delim)+1), cmdf);
-        e = errno;
-    } while (!s && e == EINTR);
+	int e;
+	do {
+		errno = 0;
+		s = fgets(tmpstr, CMDLENGTH-(strlen(delim)+1), cmdf);
+		e = errno;
+	} while (!s && e == EINTR);
 	pclose(cmdf);
 	int i = strlen(block->icon);
 	strcpy(output, block->icon);
-    strcpy(output+i, tmpstr);
+	strcpy(output+i, tmpstr);
 	remove_all(output, '\n');
 	i = strlen(output);
-    if ((i > 0 && block != &blocks[LENGTH(blocks) - 1])){
-        strcat(output, delim);
-    }
-    i+=strlen(delim);
+	if ((i > 0 && block != &blocks[LENGTH(blocks) - 1])){
+		strcat(output, delim);
+	}
+	i+=strlen(delim);
 	output[i++] = '\0';
 }
 
@@ -125,7 +125,7 @@ void getcmds(int time)
 		current = blocks + i;
 		if ((current->interval != 0 && time % current->interval == 0) || time == -1){
 			getcmd(current,statusbar[i]);
-        }
+		}
 	}
 }
 
@@ -137,7 +137,7 @@ void getsigcmds(int signal)
 		current = blocks + i;
 		if (current->signal == signal){
 			getcmd(current,statusbar[i]);
-        }
+		}
 	}
 }
 
@@ -158,8 +158,8 @@ void setupsignals()
 	sigprocmask(SIG_BLOCK, &signals, NULL);
 	// Do not transform children into zombies
 	struct sigaction sigchld_action = {
-  		.sa_handler = SIG_DFL,
-  		.sa_flags = SA_NOCLDWAIT
+		.sa_handler = SIG_DFL,
+		.sa_flags = SA_NOCLDWAIT
 	};
 	sigaction(SIGCHLD, &sigchld_action, NULL);
 
@@ -169,11 +169,11 @@ int getstatus(char *str, char *last)
 {
 	strcpy(last, str);
 	str[0] = '\0';
-    for(int i = 0; i < LENGTH(blocks); i++) {
+	for(int i = 0; i < LENGTH(blocks); i++) {
 		strcat(str, statusbar[i]);
-        if (i == LENGTH(blocks) - 1)
-            strcat(str, " ");
-    }
+		if (i == LENGTH(blocks) - 1)
+			strcat(str, " ");
+	}
 	str[strlen(str)-1] = '\0';
 	return strcmp(str, last);//0 if they are the same
 }
@@ -204,23 +204,23 @@ void pstdout()
 void statusloop()
 {
 	setupsignals();
-    // first figure out the default wait interval by finding the
-    // greatest common denominator of the intervals
-    for(int i = 0; i < LENGTH(blocks); i++){
-        if(blocks[i].interval){
-            timerInterval = gcd(blocks[i].interval, timerInterval);
-        }
-    }
-    getcmds(-1);     // Fist time run all commands
-    raise(SIGALRM);  // Schedule first timer event
-    int ret;
-    struct pollfd pfd[] = {{.fd = signalFD, .events = POLLIN}};
-    while (statusContinue) {
-        // Wait for new signal
-        ret = poll(pfd, sizeof(pfd) / sizeof(pfd[0]), -1);
-        if (ret < 0 || !(pfd[0].revents & POLLIN)) break;
-        sighandler(); // Handle signal
-    }
+	// first figure out the default wait interval by finding the
+	// greatest common denominator of the intervals
+	for(int i = 0; i < LENGTH(blocks); i++){
+		if(blocks[i].interval){
+			timerInterval = gcd(blocks[i].interval, timerInterval);
+		}
+	}
+	getcmds(-1);     // Fist time run all commands
+	raise(SIGALRM);  // Schedule first timer event
+	int ret;
+	struct pollfd pfd[] = {{.fd = signalFD, .events = POLLIN}};
+	while (statusContinue) {
+		// Wait for new signal
+		ret = poll(pfd, sizeof(pfd) / sizeof(pfd[0]), -1);
+		if (ret < 0 || !(pfd[0].revents & POLLIN)) break;
+		sighandler(); // Handle signal
+	}
 }
 
 void sighandler()
